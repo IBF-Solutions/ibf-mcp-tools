@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Startet drei MCP-Instanzen parallel:
 #   8080: TOOLSET=full,    DOC_LEVEL=compact   (Standard)
 #   8081: TOOLSET=compact, DOC_LEVEL=compact   (mittlerer Token-Verbrauch)
