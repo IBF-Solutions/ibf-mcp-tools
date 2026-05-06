@@ -1,0 +1,53 @@
+{
+  "_scope": "DEFAULT",
+  "id": "66797be0722f954c70f616f6",
+  "title": "RDP Helper Proxmox API Fortigate",
+  "description": "\u00dcberwacht RDP Verbindungsanfragen von Fortigate und startet zugeh\u00f6rige Proxmox VM",
+  "updated_at": "2024-06-24T14:07:26.692Z",
+  "matched_at": "2026-05-04T16:27:07.000Z",
+  "priority": 2,
+  "alert": true,
+  "config": {
+    "type": "aggregation-v1",
+    "query": "_exists_:dstport",
+    "query_parameters": [],
+    "filters": [],
+    "streams": [
+      "66796cd2722f954c70f60a95"
+    ],
+    "stream_categories": [],
+    "group_by": [],
+    "series": [],
+    "conditions": {
+      "expression": null
+    },
+    "search_within_ms": 5000,
+    "execute_every_ms": 5000,
+    "use_cron_scheduling": false,
+    "cron_expression": null,
+    "cron_timezone": null,
+    "event_limit": 0
+  },
+  "field_spec": {},
+  "key_spec": [],
+  "notification_settings": {
+    "grace_period_ms": 0,
+    "backlog_size": 1
+  },
+  "notifications": [
+    {
+      "notification_id": "66712e5f722f954c70ef6cd3",
+      "notification_parameters": null
+    }
+  ],
+  "storage": [
+    {
+      "type": "persist-to-streams-v1",
+      "streams": [
+        "000000000000000000000002"
+      ]
+    }
+  ],
+  "scheduler": null,
+  "state": "ENABLED"
+}

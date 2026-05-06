@@ -1,0 +1,5 @@
+# Pflicht — keine externen Pakete (nur Python-stdlib)
+
+# Optional — erweiterte Funktionen
+keyring>=25.0        # Token im Windows Credential Manager (--set-token)
+dateparser>=1.0      # Natürlichsprachige Zeitangaben (--from "letzte Woche")

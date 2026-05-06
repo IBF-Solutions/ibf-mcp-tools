@@ -1,0 +1,47 @@
+# --- Sicherheit / Credentials -----------------------------------------------
+*.env
+*.env_*
+.env
+.env.*
+*.auth
+*id_rsa*
+*id_ed25519*
+*.pem
+*.ppk
+*.key
+key-files/
+
+# --- Sub-Repo: gehört in interne GitLab, nicht hierher ----------------------
+claude_base/projekte/gitlab/
+
+# --- Vom User explizit ausgeschlossen --------------------------------------
+claude_base/projekte/graylog/tools/bw.exe
+
+# --- Unbekannter ZIP-Inhalt -- bei Bedarf manuell wieder reinnehmen --------
+fortigate.zip
+
+# --- Workdirs (transiente Daten) -------------------------------------------
+workdir/
+**/workdir/
+
+# --- Python -----------------------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.pytest_cache/
+
+# --- Editor / OS -----------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
+
+# --- Build / Logs ----------------------------------------------------------
+*.log
+dist/
+build/
+*.egg-info/

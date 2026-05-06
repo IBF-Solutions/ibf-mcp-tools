@@ -1,0 +1,1 @@
+claude --resume "proxmox" --dangerously-skip-permissions

@@ -1,0 +1,289 @@
+[
+  {
+    "name": "help",
+    "description": "Hilfe-Text wird ausgegeben",
+    "args": ["--help"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["Aktionen", "Zeitfenster", "graylog-query"]
+    }
+  },
+  {
+    "name": "help-ai",
+    "description": "AI-Hilfe-Text wird ausgegeben",
+    "args": ["--help-ai"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["ACTIONS", "TIME WINDOW", "verdicts"]
+    }
+  },
+  {
+    "name": "error-terms-no-field",
+    "description": "action=terms ohne --terms gibt Fehler",
+    "args": ["--action", "terms", "--last", "1h"],
+    "expect": {
+      "exit_code": 1,
+      "output_contains": ["ERROR"]
+    }
+  },
+  {
+    "name": "error-conflicting-time",
+    "description": "--today und --last gleichzeitig gibt Fehler",
+    "args": ["--action", "count", "--source", "gw", "--today", "--last", "1h"],
+    "expect": {
+      "exit_code": 1,
+      "output_contains": ["ERROR"]
+    }
+  },
+  {
+    "name": "streams",
+    "description": "Streams werden aufgelistet",
+    "args": ["--action", "streams"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["streams"]
+    }
+  },
+  {
+    "name": "streams-raw",
+    "description": "Streams als JSON",
+    "args": ["--action", "streams", "--raw"],
+    "expect": {
+      "exit_code": 0,
+      "valid_json": true,
+      "json_type": "array"
+    }
+  },
+  {
+    "name": "count-fortigate",
+    "description": "Count aller FortiGate-Logs der letzten Stunde",
+    "args": ["--action", "count", "--source", "gw", "--last", "1h"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["total_results"]
+    }
+  },
+  {
+    "name": "count-fortigate-raw",
+    "description": "Count als JSON, enthält total_results-Key",
+    "args": ["--action", "count", "--source", "gw", "--last", "1h", "--raw"],
+    "expect": {
+      "exit_code": 0,
+      "valid_json": true,
+      "json_type": "object",
+      "json_keys": ["total_results", "query"]
+    }
+  },
+  {
+    "name": "count-amavis-blocked",
+    "description": "Exakter Count für Blocked INFECTED (phrase query)",
+    "args": ["--action", "count", "--source", "itl15-gdata-smtp",
+             "--query", "\"Blocked INFECTED\"", "--last", "30d"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["total_results"]
+    }
+  },
+  {
+    "name": "verdicts",
+    "description": "amavis-Verdict-Tabelle enthält alle 8 Verdicts",
+    "args": ["--action", "verdicts", "--last", "7d"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": [
+        "Blocked INFECTED",
+        "Blocked SPAMMY",
+        "Blocked BANNED",
+        "Passed CLEAN",
+        "Passed SPAMMY",
+        "Total Blocked",
+        "Total Passed"
+      ]
+    }
+  },
+  {
+    "name": "verdicts-raw",
+    "description": "Verdicts als JSON-Array mit verdict/category/count",
+    "args": ["--action", "verdicts", "--last", "7d", "--raw"],
+    "expect": {
+      "exit_code": 0,
+      "valid_json": true,
+      "json_type": "array",
+      "json_array_item_keys": ["verdict", "category", "count"]
+    }
+  },
+  {
+    "name": "terms-topn",
+    "description": "Top-5 Policy-IDs die deny geloggt haben",
+    "args": ["--action", "terms", "--terms", "policyid",
+             "--query", "action:deny", "--terms-size", "5", "--last", "24h"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["top ", "policyid", "values:"]
+    }
+  },
+  {
+    "name": "terms-patterns-serverside",
+    "description": "Pattern-Counts sind exakt (kein WARN über Sample-Limit)",
+    "args": ["--action", "terms", "--terms", "message",
+             "--source", "web12-hz",
+             "--patterns", "status=sent",
+             "--patterns", "status=deferred",
+             "--patterns", "status=bounced",
+             "--last", "24h"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["status=sent", "status=deferred", "status=bounced", "(no match)"],
+      "output_not_contains": ["WARN"]
+    }
+  },
+  {
+    "name": "terms-patterns-raw",
+    "description": "Pattern-Counts als JSON mit patterns/no_match/total",
+    "args": ["--action", "terms", "--terms", "message",
+             "--source", "web12-hz",
+             "--patterns", "status=sent",
+             "--last", "1h", "--raw"],
+    "expect": {
+      "exit_code": 0,
+      "valid_json": true,
+      "json_keys": ["patterns", "no_match", "total"]
+    }
+  },
+  {
+    "name": "fields-discovery",
+    "description": "Felder einer Source werden aufgelistet (timestamp immer vorhanden)",
+    "args": ["--action", "fields", "--source", "gw", "--last", "5m", "--limit", "1"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["timestamp", "source"]
+    }
+  },
+  {
+    "name": "query-default",
+    "description": "Default-Suche auf FortiGate gibt Treffer zurück",
+    "args": ["--source", "gw", "--last", "5m", "--limit", "3"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["total_results", "showing"]
+    }
+  },
+  {
+    "name": "query-fields-filter",
+    "description": "--fields reduziert den Output auf die gewählten Felder",
+    "args": ["--source", "gw", "--last", "5m", "--limit", "2",
+             "--fields", "timestamp,srcip"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["timestamp"],
+      "output_not_contains": ["dstip", "policyid"]
+    }
+  },
+  {
+    "name": "query-raw-fields-stripped",
+    "description": "--raw ohne --fields enthält keine gl2_-Felder",
+    "args": ["--source", "gw", "--last", "5m", "--limit", "2", "--raw"],
+    "expect": {
+      "exit_code": 0,
+      "valid_json": true,
+      "json_keys": ["query", "total_results", "showing", "messages"],
+      "output_not_contains": ["gl2_"]
+    }
+  },
+  {
+    "name": "query-raw-fields-select",
+    "description": "--raw mit --fields liefert nur gewählte Felder im JSON",
+    "args": ["--source", "gw", "--last", "5m", "--limit", "2",
+             "--fields", "timestamp,srcip", "--raw"],
+    "expect": {
+      "exit_code": 0,
+      "valid_json": true,
+      "output_not_contains": ["dstip", "gl2_"]
+    }
+  },
+  {
+    "name": "mail-to-today",
+    "description": "--mail-to setzt automatisch source:web12-hz",
+    "args": ["--mail-to", "philipp.wacker@ibf-solutions.com", "--today", "--limit", "5"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["web12-hz", "total_results"]
+    }
+  },
+  {
+    "name": "from-to-naive",
+    "description": "--from/--to ohne Timezone (naive, wird als Lokalzeit interpretiert)",
+    "args": ["--action", "count", "--source", "gw",
+             "--from", "2026-04-27T00:00:00", "--to", "2026-05-04T00:00:00"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["total_results"]
+    }
+  },
+  {
+    "name": "from-to-utc-z",
+    "description": "--from/--to mit Z-Suffix (UTC explizit)",
+    "args": ["--action", "count", "--source", "gw",
+             "--from", "2026-04-27T00:00:00Z", "--to", "2026-05-04T00:00:00Z"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["total_results"]
+    }
+  },
+  {
+    "name": "from-to-offset",
+    "description": "--from/--to mit Timezone-Offset (+02:00)",
+    "args": ["--action", "count", "--source", "gw",
+             "--from", "2026-04-27T00:00:00+02:00", "--to", "2026-05-04T00:00:00+02:00"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["total_results"]
+    }
+  },
+  {
+    "name": "from-to-date-only",
+    "description": "--from/--to nur mit Datum (ohne Uhrzeit)",
+    "args": ["--action", "count", "--source", "gw",
+             "--from", "2026-04-27", "--to", "2026-05-04"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["total_results"]
+    }
+  },
+  {
+    "name": "from-keyword-heute",
+    "description": "--from heute ohne --to (--to defaults zu jetzt)",
+    "args": ["--action", "count", "--source", "gw", "--from", "heute"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["total_results"]
+    }
+  },
+  {
+    "name": "from-keyword-gestern",
+    "description": "--from gestern ohne --to (--to defaults zu jetzt)",
+    "args": ["--action", "count", "--source", "gw", "--from", "gestern"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["total_results"]
+    }
+  },
+  {
+    "name": "from-without-to",
+    "description": "--from ISO ohne --to (--to defaults zu jetzt)",
+    "args": ["--action", "count", "--source", "gw", "--from", "2026-04-27T00:00:00"],
+    "expect": {
+      "exit_code": 0,
+      "output_contains": ["total_results"]
+    }
+  },
+  {
+    "name": "error-to-without-from",
+    "description": "--to ohne --from gibt Fehler",
+    "args": ["--action", "count", "--source", "gw", "--to", "2026-05-04T00:00:00"],
+    "expect": {
+      "exit_code": 1,
+      "output_contains": ["ERROR"]
+    }
+  }
+]

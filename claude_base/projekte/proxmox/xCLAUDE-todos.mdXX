@@ -1,0 +1,138 @@
+## TODO List
+
+### IGNORED FOR NOW (do not action)
+<!-- nothing yet -->
+
+### SECURITY
+
+- [ ] **T1** [P1] IP und API-Token aus CLAUDE.md in Keyring/Secret-Store auslagern — aktuell stehen Host-IP und Token-Secret im Klartext in der Konfigurationsdatei. Auf OS-Keyring (z. B. Windows Credential Manager / `keyring`-Lib) oder `.env`-Datei (gitignored) umstellen.
+
+- [ ] **T2** [P1] SSH-Key für Proxmox-Nodes im Keystore hinterlegen — analog zu graylog: SSH-Key-Pfad/-Passphrase über Windows Credential Manager oder `keyring` verwalten statt hartkodiert im Script. `proxmox-query.py --exec` soll dann den Key dynamisch laden.
+
+### HIGH PRIORITY
+
+- [ ] **T3** [P1] proxmox-query.py `--action logs --deep` — Backup-Logs, Task-Logs und Systemlogs aller Nodes analysieren und auf Fehler/Warnungen zusammenfassen. Ohne `--deep` nur letzte Tasks; mit `--deep` vollständige Log-Traversierung inkl. k1e-storbox dump/-Logs.
+
+- [ ] **T4** [P1] Verwaiste Daten bereinigen (gefunden 2026-05-05) — Prüfung ergab mehrere Kategorien:
+  - **ZFS-Snapshots (alter Replication-Job 185-0)**: `tank/vm-185-disk-0@__replicate_185-0_1745209800__` auf k1-low UND k5 je ~21.9 GB = **~44 GB** gesamt. Job existiert nicht mehr, Snapshots orphaned.
+  - **ZFS-Snapshot orphan**: `tank/subvol-104-disk-0@upd` auf k1-low (81 MB) — kein Proxmox-Snapshot in LXC 104 registriert, reines ZFS-Relikt.
+  - **k1e-storbox**: VM 1040 "vm-hegg" Backup (14 GB) + LXC 120 Backup Sep 2025 (2.3 GB) + orphaned `.tmp`-Dateien + ~200 Fehler-Logs ohne zugehörige Backups (VM 110, 115, 117, 122, 185).
+  - **k1e-storbox2**: LXC 120 (4.8 GB, **protected**!) + LXC 127 (2.9 GB) + orphaned `.tmp`-Dateien.
+  - **LXC 117 unused0** (32.9 GB auf k1-low): noch nicht gelöscht — `pct set 117 --delete unused0`.
+
+- [ ] **T5** [P1] `k1e-storbox` CIFS storage cleanup partially done — deleted orphaned .dat files (+40 GB freed),
+  now at ~81%. Still: vmid 1040 "vm-hegg" (14 GB, deleted VM) remains — delete when convenient to give
+  the nightly backup job enough headroom for VM 185 (~22 GB).
+
+- [ ] **T6** [P1] k1-low CPU permanently at ~100% — `85-homeassistantV2` (VM 185) is alone consuming
+  92% of 4 vCPUs on the most constrained node. Investigate HA for runaway integrations or
+  recorder overload. Consider migrating VM 185 to k5 or k2, or adding vCPUs if host allows.
+
+- [ ] **T7** [P1] `86-homeass-db` (LXC 117) MariaDB OOM-Loop — Container ist jetzt auf k2 (migriert 2026-04-28),
+  hat aber immer noch nur 1024 MB RAM. `mariadbd` wurde seit Apr 7 mindestens **16× durch den cgroup
+  OOM-Killer abgewürgt**. RAM auf mindestens 2 GB erhöhen (k2 hat genug Headroom). Danach MariaDB-Logs
+  auf Tabellenkorruption prüfen (`mysqlcheck -u root -p --all-databases`).
+
+- [x] ~~**T8** [P1] Replication-Job 117-1 ist veraltet~~ (erledigt 2026-05-05) — bei Verifizierung
+  zeigte `pvesr list` / `pvesr status`: Job läuft sauber mit source=k2 → target=k1-low,
+  Schedule */18, FailCount=0, LastSync 2026-05-05 06:18 OK. Job wurde irgendwann zwischen
+  Migration (2026-04-28) und Verifizierung neu auf k2 aufgesetzt -- nichts mehr zu tun.
+
+- [ ] **T9** [P1] LXC 117 `unused0`-Volume (32.9 GB) — wurde bei Migration mitkopiert und liegt jetzt auf k2.
+  Wenn nicht gebraucht: `pct set 117 --delete unused0` löscht es.
+
+### MEDIUM PRIORITY
+
+- [ ] **T10** [P2] k2 RAM at 94% — `68-debian13-localai` has 24 GB allocated but uses only ~8 GB.
+  If the model doesn't need 24 GB, reduce the allocation to free headroom on k2.
+
+- [ ] **T11** [P2] k1-low RAM at 90% — node has 5 running workloads in 15.5 GB. No room for spikes.
+  Consider migrating one container to k5 (which has 39 GB and is only at 47%).
+
+- [ ] **T12** [P2] LXC 102 disk at 79% — `k81-webserver-lms-docker` at 4/5 GB. Expand disk or clean up.
+
+- [ ] **T13** [P2] LXC 105 disk at 74% — `156-vaultwarden2` at 4.4/6 GB. Monitor; expand if needed.
+
+- [ ] **T14** [P2] Backup `keep-last: 1` überall — beide aktiven Backup-Jobs (k1e-storbox, k1e-storbox2) behalten
+  nur 1 Generation. Bei einem korrupten Backup gibt es keinen Fallback. Für die kritischen VMs
+  185 (HA) und 117 (HA-DB) auf `keep-last: 2` erhöhen — kostet ~32 GB mehr auf k1e-storbox2,
+  die aktuell noch 31 GB frei hat.
+
+- [ ] **T15** [P2] Nuitka-Build der IBF-Tools auf GitHub Actions auslagern — aktuell muss `ibf-mcp.py` (und
+  optional `proxmox-query.py`, `graylog-query.py`) lokal mit Nuitka kompiliert werden um Startup-Zeit
+  von ~1.4s auf ~250ms zu drücken. Der Build zieht ~35 zig.exe-Prozesse hoch, frisst 2-3 GB RAM und
+  blockiert auf einem 16-GB-Laptop spürbar. Lösung: GitHub Actions Workflow (`windows-latest` Runner)
+  mit Nuitka-Step, fertige `.exe` als Release-Artefakt veröffentlichen. Dann lokal nur noch
+  Download statt Build. Repo wahrscheinlich `IBF-Solutions/ibf-mcp` oder als Subdir im IBF-Buddy.
+  Voraussetzung: Tools müssen versioniert sein (Tag/Release-basiert) damit Cache stimmt.
+
+  **Bekannte Issues (aus 2 Build-Versuchen 2026-05-05):**
+  - `--jobs=4` empfehlenswert (default unbegrenzt → 35+ zig.exe parallel, OOM auf 16-GB-Laptop)
+  - Build-Output ~700 MB Zwischenstände (`proxmox-query.build/` + `proxmox-query.dist/`),
+    finale `.exe` ~60 MB, dist-Verzeichnis ~86 MB
+  - Speed-Vergleich (warm, --help): Python 526 ms vs Nuitka 230 ms (-56%)
+  - **KRITISCH: keyring-Backend-Discovery scheitert in Nuitka-Builds.** keyring nutzt
+    `entry_points` (Package-Metadata) zur Backend-Auto-Wahl. Nuitka übernimmt nur Code, keine
+    Metadata. Folge: `keyring.get_password()` findet kein Backend, gibt None zurück.
+    `--include-package=keyring.backends.Windows` und `--include-package=win32ctypes` reichen
+    NICHT. Lösungs-Optionen für CI:
+    a) `--include-package-data=keyring` -- übernimmt entry_points-Metadaten (ungetestet)
+    b) Code-Patch: `keyring.set_keyring(WinVaultKeyring())` direkt im Tool aufrufen, bevor
+       `keyring.get_password()` läuft -- bypasst Discovery
+    c) Beides kombinieren für maximale Robustheit
+  - Erst-Aufruf der `.exe` ist langsam (~3s) wegen Windows-Defender-Realtime-Scan auf der
+    unsigned 60-MB-Binary; warm-Aufrufe sind dann ~230 ms. In CI ggf. signieren oder
+    Defender-Whitelist dokumentieren.
+
+- [ ] **T16** [P2] Debian-Template auf IBF-Konventionen prüfen — `proxmox_vm_install_recipe` und
+  `proxmox_vm_apt` setzen voraus dass Standard-VMs eine bestimmte Grundausstattung haben.
+  Das Template (z.B. VM 100 `debian13-basic` auf k5) sollte diese Festlegungen erfüllen,
+  damit Klone direkt nutzbar sind:
+  - `qemu-guest-agent` Paket installiert UND `agent: 1` in der VM-Config (für vm_run/vm_apt)
+  - `parted` Paket installiert (für FS-Extension nach Disk-Resize)
+  - `cloud-init` oder sane DHCP-Network-Setup
+  - SSH-Server mit Public-Key-Auth (Fallback falls Guest Agent ausfällt)
+  - LVM-Setup statt direkt-Partition (damit Disk-Wachstum + Partitions-Resize generisch
+    funktioniert)
+  - `unattended-upgrades` deaktiviert oder bewusst konfiguriert (kollidiert sonst mit
+    `vm_apt`)
+  - Festes Locale (de_DE.UTF-8 oder en_US.UTF-8) — Output-Encoding-Probleme bei mixed
+    locales
+  Aktion: Checkliste-Script das via `proxmox_vm_run` diese Punkte gegen das Template
+  (oder einen frischen Klon) abprüft und Abweichungen als Liste meldet. Idealerweise als
+  neues Tool `proxmox_vm_check_template_compliance(name)`.
+
+### LOW / INFORMATIONAL
+
+- [x] **T17** [P3] ~~**`sdb` auf k5 einbinden** (erledigt 2026-04-28)~~ — als `qcow2-sdb` (ext4 dir, 110 GB nutzbar)
+  eingebunden. SMART Extended + badblocks bestanden (0 Fehler). Hinweis: Temperatur hatte in der
+  Vergangenheit 64°C Peak (Schwelle 50°C) — bei längerer Last Gehäusebelüftung k5 prüfen.
+
+- [ ] **T18** [P3] LXC 116 `cloudflared2` is stopped on k5 — verify if this is intentional or if the
+  tunnel should be running. If unused, consider removing.
+
+- [ ] **T19** [P3] k1e-storbox2 — at 68% (68/100 GB) — not urgent but on a trajectory to fill.
+
+---
+
+## Audit Log
+
+| Date | Action | Notes |
+|---|---|---|
+| 2026-04-28 | Initial setup | Connected, listed 3 nodes; discovered privsep issue |
+| 2026-04-28 | Privsep disabled | Full cluster health check completed; findings documented above |
+| 2026-04-28 | Backup cleanup | Deleted .dat garbage files (~44 GB) + orphaned backups vmid 106/121/111; deleted dead backup job (PBS); storage at ~81% |
+| 2026-04-28 | SSH access | Generated key at ~/.ssh/proxmox_claude; added to all 3 nodes |
+| 2026-04-28 | k5 NIC fix | e1000e EEE deaktiviert (sofort + persistent in /etc/network/interfaces) — behebt wiederkehrende Hardware Unit Hangs die zu Absturz Apr 7 führten |
+| 2026-04-28 | k5 crash analysis | MariaDB (LXC 117) 16× OOM-gekillt seit Apr 7; CIFS-Aussetzer bei Hetzner StorageBoxen festgestellt |
+| 2026-04-28 | k5 sdb integration | SMART+badblocks ohne Fehler; sdb partitioniert, ext4, gemountet auf /qcow2-sdb, als Proxmox-Storage `qcow2-sdb` (rootdir,images,iso, nur k5) hinzugefügt |
+| 2026-04-28 | k1-low check | Keine Crashes, keine OOMs; aber NIC `enp3s0` (r8169) mit 223 Link-Down Events in 90 Tagen — EEE deaktiviert (sofort + persistent) |
+| 2026-04-28 | k5 microcode update | `non-free-firmware` zu sources.list hinzugefügt; intel-microcode von 3.20240531.1 → 3.20251111.1~deb12u1 aktualisiert; Reboot ausstehend für Aktivierung |
+| 2026-04-28 | LXC 117 Migration | k5 → k2 (offline restart, Dauer 15:37, ~32 GB übertragen) |
+| 2026-04-28 | Snapshots cleanup | LXC 101: upd, upd2, __migration__ gelöscht (~5 GB ZFS); LXC 105: vor; VM 106: bak (5 Disks, ~15.5 GB) |
+| 2026-04-28 | Garbage cleanup | Verwaiste ZFS-Volumes auf k1-low (vm-110, vm-115×6 ≈ 38 GB) und k2 (vm-100); 5 abgebrochene Backups auf k1e-storbox2 (~23.4 GB); 738 alte Backup-Logs; 2× Debian-12 Templates |
+| 2026-04-28 | LXC 101 Coral Fix | Whole-USB-Bus-Passthrough statt hartkodierter dev1/dev2/dev3 — behebt Boot-Fail nach Reboot durch Re-Enumeration (1a6e:089a→18d1:9302) |
+| 2026-04-28 | k5 Reboot | Coral-Fix verifiziert (101 startete autonom, Coral nun an Bus 002 Dev 002, Whole-Bus-Passthrough fing es ab); Microcode 0xfc → 0x104 aktiv; EEE persistent disabled. Downtime 65 Sek. |
+| 2026-05-04 | LXC 109 angelegt | Debian 13, hostname pw-workhorse192, k5/tank, 8 GB, 512 MB RAM, IP 192.168.10.79 (DHCP), SSH-Key auth, via proxmox-query.py --op create |
+| 2026-05-04 | proxmox-query.py | Script um --action control erweitert: start/stop/shutdown/reboot/suspend/resume/unlock/migrate/snapshot/delsnapshot/rollback/set/resize/create |
+| 2026-05-05 | T8 verifiziert (no-op) | Replication-Job 117-1 war als „broken nach Migration" im TODO geführt; `pvesr list`/`pvesr status` auf k2 zeigt: source=k2 → target=k1-low, Schedule */18, FailCount=0, LastSync 2026-05-05 06:18 OK. Hat sich also irgendwann zwischen 2026-04-28 und 2026-05-05 selbst korrigiert (vermutlich durch automatische Re-Konfiguration nach Migration oder manueller Eingriff). T8 abgehakt. |

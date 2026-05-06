@@ -1,0 +1,1 @@
+claude --resume "graylog" --dangerously-skip-permissions

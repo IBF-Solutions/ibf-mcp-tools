@@ -1,0 +1,68 @@
+{
+  "title": "RDP Helper Proxmox API Fortigate (debounced)",
+  "description": "\u00dcberwacht RDP Verbindungsanfragen von Fortigate und startet zugeh\u00f6rige Proxmox VM. Debounced: 1 Webhook pro dstport / 2min.",
+  "priority": 2,
+  "alert": true,
+  "config": {
+    "type": "aggregation-v1",
+    "query": "*",
+    "query_parameters": [],
+    "filters": [],
+    "streams": [
+      "66796cd2722f954c70f60a95"
+    ],
+    "stream_categories": [],
+    "group_by": [
+      "dstport"
+    ],
+    "series": [
+      {
+        "id": "count",
+        "type": "count",
+        "field": null
+      }
+    ],
+    "conditions": {
+      "expression": {
+        "expr": ">",
+        "left": {
+          "expr": "number-ref",
+          "ref": "count"
+        },
+        "right": {
+          "expr": "number",
+          "value": 0
+        }
+      }
+    },
+    "search_within_ms": 30000,
+    "execute_every_ms": 10000,
+    "use_cron_scheduling": false,
+    "cron_expression": null,
+    "cron_timezone": null,
+    "event_limit": 0
+  },
+  "field_spec": {},
+  "key_spec": [
+    "dstport"
+  ],
+  "notification_settings": {
+    "grace_period_ms": 120000,
+    "backlog_size": 1
+  },
+  "notifications": [
+    {
+      "notification_id": "66712e5f722f954c70ef6cd3",
+      "notification_parameters": null
+    }
+  ],
+  "storage": [
+    {
+      "type": "persist-to-streams-v1",
+      "streams": [
+        "000000000000000000000002"
+      ]
+    }
+  ],
+  "state": "ENABLED"
+}

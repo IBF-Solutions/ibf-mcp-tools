@@ -1,0 +1,1 @@
+claude --resume "fortigate" --dangerously-skip-permissions

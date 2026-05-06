@@ -1,0 +1,149 @@
+# IBF Personal Proxmox-Cluster Inventar
+# Quelle: proxmox/CLAUDE.md (Stand 2026-05-05)
+#
+# Verwendung: morning-dashboard (projekte/dashboard/) verwendet diese Datei
+# als Soll-Liste für die "VMs müssen laufen"-Prüfung.
+#
+# Felder pro Eintrag:
+#   vmid:    Proxmox-VM/LXC-ID
+#   name:    Name laut Cluster
+#   role:    server | client | template | infra
+#   label:   production | on-demand | debug   (default: production)
+#   os:      linux | windows-server | windows-client | other
+#   dmz:     true wenn IP in 10.10.10.0/24 (informativ)
+#   note:    Freitext
+#
+# Soll-laufen-Logik fürs Dashboard:
+#   role=server UND label=production  -> MUSS laufen, sonst ALERT
+#   role=client                       -> nur informativ (online-Quote)
+#   label=on-demand oder debug        -> kein Soll-Check
+#   role=template                     -> kein Soll-Check
+#
+# Hinweis: Einträge mit "review:" im note-Feld sind aus CLAUDE.md
+# automatisch übernommen, aber das angegebene Label ist eine Annahme --
+# bitte beim Durchgehen verifizieren oder anpassen.
+
+proxmox:
+  - vmid: 100
+    name: debian13-basic
+    role: template
+    label: on-demand
+    os: linux
+    note: Template/spare
+
+  - vmid: 101
+    name: 183p-d-frigate
+    role: server
+    label: production
+    os: linux
+    note: NVR / camera system; Backup absichtlich aus
+
+  - vmid: 102
+    name: k81-webserver-lms-docker
+    role: server
+    label: production
+    os: linux
+    note: Web + LMS (Docker)
+
+  - vmid: 103
+    name: k84-mqtt
+    role: server
+    label: production
+    os: linux
+    note: MQTT broker
+
+  - vmid: 104
+    name: 119-rustdesk
+    role: server
+    label: production
+    os: linux
+    note: RustDesk relay
+
+  - vmid: 105
+    name: 156-vaultwarden2
+    role: server
+    label: production
+    os: linux
+    note: Vaultwarden password manager
+
+  - vmid: 106
+    name: 68-debian13-localai
+    role: server
+    label: production
+    os: linux
+    note: LocalAI inference (GPU)
+
+  - vmid: 107
+    name: 118-Edomi
+    role: server
+    label: production
+    os: linux
+    note: "review: aktuell stopped in Cluster -- Edomi Smart-Home: soll das laufen?"
+
+  - vmid: 109
+    name: pw-workhorse192
+    role: server
+    label: production
+    os: linux
+    note: Debian 13, SSH-only, IP 192.168.10.79
+
+  - vmid: 110
+    name: tools-93-mikrotik-ros-chr
+    role: server
+    label: debug
+    os: other
+    note: MikroTik CHR Test-VM
+
+  - vmid: 114
+    name: debianMini12
+    role: server
+    label: on-demand
+    os: linux
+    note: Spare/test
+
+  - vmid: 115
+    name: vm-windows11
+    role: client
+    label: on-demand
+    os: windows-client
+    note: Windows-11-Test-VM
+
+  - vmid: 116
+    name: cloudflared2
+    role: server
+    label: production
+    os: linux
+    note: "review: aktuell stopped in Cluster -- Cloudflare-Tunnel: soll das laufen?"
+
+  - vmid: 117
+    name: 86-homeass-db
+    role: server
+    label: production
+    os: linux
+    note: HA-Database (MariaDB), migriert k5->k2 am 2026-04-28
+
+  - vmid: 122
+    name: 65-paperless-v4
+    role: server
+    label: production
+    os: linux
+    note: Paperless-ngx DMS
+
+  - vmid: 130
+    name: claude-workhorse
+    role: server
+    label: production
+    os: linux
+    note: Tool-LXC für Cam/Network-Mgmt (siehe CLAUDE_workhorse.md)
+
+  - vmid: 185
+    name: 85-homeassistantV2
+    role: server
+    label: production
+    os: linux
+    note: Home Assistant Hauptinstanz
+
+# Hetzner-Cloud-Server
+# Wird beim ersten Dashboard-Run aus der Hetzner-Cloud-API populiert und
+# hier persistiert. Manuelle Overrides (label, role) bleiben erhalten.
+hetzner: []
