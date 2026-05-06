@@ -46,6 +46,29 @@ Mikrotik-MCP analog separat:
 python mikrotik/tools/mikrotik-mcp.py --install
 ```
 
+## Container-Deployment (HTTP-MCP)
+
+Für Remote-Zugriff (Claude Code von einem anderen Rechner, später claude.ai):
+
+- `Dockerfile` + `requirements.txt` im Repo-Root
+- GitHub Actions Workflow `.github/workflows/build-image.yml` baut bei jedem
+  relevanten Push und published nach **GHCR** als `ghcr.io/ibf-solutions/ibf-mcp-tools:latest`
+- `ibf-mcp.py --http` startet den FastMCP-`streamable-http`-Transport
+- Vollständige Setup-Anleitung in [`docker-deploy.md`](docker-deploy.md)
+
+Quickstart auf einem Docker-Host:
+```bash
+docker pull ghcr.io/ibf-solutions/ibf-mcp-tools:latest
+docker run -d --name ibf.mcp --hostname ibf.mcp --restart unless-stopped \
+  -p 8080:8080 --env-file /etc/ibf-mcp.env \
+  ghcr.io/ibf-solutions/ibf-mcp-tools:latest
+```
+
+Claude Code anbinden:
+```powershell
+claude mcp add --scope user ibf-remote --transport http http://<host>:8080/mcp
+```
+
 ## Kontextsystem
 
 Die Tools erkennen automatisch ob sie im **ibf**- (10.10.40.0/21) oder

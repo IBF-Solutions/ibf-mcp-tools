@@ -4057,6 +4057,33 @@ if __name__ == "__main__":
                 )
             print("[OK] Combined MCP entfernt.")
 
+        elif cmd == "--http":
+            # HTTP-Transport (streamable-http). Für Container/Remote-Deployments.
+            host = os.environ.get("IBF_MCP_HTTP_HOST", "0.0.0.0")
+            port = int(os.environ.get("IBF_MCP_HTTP_PORT", "8080"))
+            extra = sys.argv[2:]
+            i = 0
+            while i < len(extra):
+                if extra[i] == "--host" and i + 1 < len(extra):
+                    host = extra[i + 1]; i += 2
+                elif extra[i] == "--port" and i + 1 < len(extra):
+                    port = int(extra[i + 1]); i += 2
+                else:
+                    print(f"[FEHLER] unbekanntes Argument: {extra[i]}", file=sys.stderr)
+                    sys.exit(1)
+            mcp.settings.host = host
+            mcp.settings.port = port
+            # Default-DNS-Rebinding-Whitelist erlaubt nur 127.0.0.1/localhost.
+            # Bei Bind auf 0.0.0.0 (interner LAN-Server) auflockern -- der Schutz
+            # ist für Browser-basierte Clients gedacht, nicht für interne MCP-Setups.
+            try:
+                mcp.settings.transport_security.enable_dns_rebinding_protection = False
+            except Exception:
+                pass
+            print(f"[ibf-mcp] HTTP transport on http://{host}:{port}"
+                  f"{mcp.settings.streamable_http_path}", file=sys.stderr)
+            mcp.run(transport="streamable-http")
+
         elif cmd == "--test":
             print("Teste Proxmox + Graylog ...\n")
             print("--- PROXMOX ---")
@@ -4077,7 +4104,8 @@ if __name__ == "__main__":
             print(f"  python {Path(script).name} --install     # Combined MCP registrieren")
             print(f"  python {Path(script).name} --uninstall   # Entfernen")
             print(f"  python {Path(script).name} --test        # Beide Verbindungen testen")
-            print(f"  python {Path(script).name}               # MCP-Server starten")
+            print(f"  python {Path(script).name} --http [--host H --port P]  # HTTP-Transport")
+            print(f"  python {Path(script).name}               # MCP-Server starten (stdio)")
             print(f"")
             print(f"Passwörter (gelten für beide Domains -- Auth bleibt aber getrennt):")
             print(f"  python ibf_mcp_auth.py --set-global-password    # ein PW für alles")
