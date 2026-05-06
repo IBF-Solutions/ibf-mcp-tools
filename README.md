@@ -56,17 +56,21 @@ Für Remote-Zugriff (Claude Code von einem anderen Rechner, später claude.ai):
 - `ibf-mcp.py --http` startet den FastMCP-`streamable-http`-Transport
 - Vollständige Setup-Anleitung in [`docker-deploy.md`](docker-deploy.md)
 
+Ein Container exposed drei Ports parallel (8080=full, 8081=compact, 8082=min --
+unterschiedliche Toolset/Doc-Level-Kombinationen für verschiedene Token-Budgets).
+
 Quickstart auf einem Docker-Host:
 ```bash
 docker pull ghcr.io/ibf-solutions/ibf-mcp-tools:latest
 docker run -d --name ibf.mcp --hostname ibf.mcp --restart unless-stopped \
-  -p 8080:8080 --env-file /etc/ibf-mcp.env \
+  -p 8180:8080 -p 8181:8081 -p 8182:8082 \
+  --env-file /etc/ibf-mcp.env \
   ghcr.io/ibf-solutions/ibf-mcp-tools:latest
 ```
 
-Claude Code anbinden:
+Claude Code anbinden (Beispiel mit full-Toolset):
 ```powershell
-claude mcp add --scope user ibf-remote --transport http http://<host>:8080/mcp
+claude mcp add --scope user ibf-remote --transport http http://<host>:8180/mcp
 ```
 
 ## Kontextsystem

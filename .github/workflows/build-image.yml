@@ -8,6 +8,7 @@ on:
       - "claude_base/tools/ibf_mcp_auth.py"
       - "claude_base/tools/mcp_logger.py"
       - "Dockerfile"
+      - "docker/**"
       - "requirements.txt"
       - ".github/workflows/build-image.yml"
   workflow_dispatch:

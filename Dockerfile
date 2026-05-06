@@ -2,13 +2,12 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    IBF_MCP_HTTP_HOST=0.0.0.0 \
-    IBF_MCP_HTTP_PORT=8080
+    IBF_MCP_HTTP_HOST=0.0.0.0
 
 WORKDIR /app
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates \
+ && apt-get install -y --no-install-recommends ca-certificates gawk \
  && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app/requirements.txt
@@ -17,7 +16,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY claude_base/tools/ibf-mcp.py        /app/ibf-mcp.py
 COPY claude_base/tools/ibf_mcp_auth.py   /app/ibf_mcp_auth.py
 COPY claude_base/tools/mcp_logger.py     /app/mcp_logger.py
+COPY docker/entrypoint.sh                /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-EXPOSE 8080
+EXPOSE 8080 8081 8082
 
-CMD ["python", "/app/ibf-mcp.py", "--http"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
