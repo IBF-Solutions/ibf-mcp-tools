@@ -16,6 +16,10 @@ claude_base/projekte/gitlab/
 
 # --- Vom User explizit ausgeschlossen --------------------------------------
 claude_base/projekte/graylog/tools/bw.exe
+claude_base/projekte/fortigate/analysis/
+
+# --- Browser-Session-Cookies (Playwright-Auth-State) -----------------------
+claude_base/projekte/zeiterfassung/auth.json
 
 # --- Unbekannter ZIP-Inhalt -- bei Bedarf manuell wieder reinnehmen --------
 fortigate.zip
